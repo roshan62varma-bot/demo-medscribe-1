@@ -151,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenAuth}
             className="neo-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
             style={{ color: '#92400e' }}
-            title="Switch staff member"
+            title="Sign out"
           >
             <div
               className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black"

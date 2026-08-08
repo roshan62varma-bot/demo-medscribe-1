@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { answerRegisterQuery, RegisterNote } from "./registerChatEngine";
 
 dotenv.config();
 
@@ -826,85 +827,138 @@ app.get("/api/register", (req: Request, res: Response) => {
 
 // 7. Register Assistant Chatbot
 app.post("/api/chat", async (req: Request, res: Response) => {
-  const { message, locale = "en-IN" } = req.body;
+  const { message, locale = "en-IN", history = [] } = req.body;
 
   if (!message || typeof message !== "string") {
     return res.status(400).json({ error: "message_required" });
   }
 
-  // Get current signed register notes context
-  const signedNotes: any[] = [];
+  // ── Build rich note objects from the in-memory DB ──────────────────────
+  const signedNotes: RegisterNote[] = [];
   notesDb.forEach((rec) => {
-    if (rec.status === "SIGNED") {
-      signedNotes.push({
-        id: rec.id,
-        patient: rec.payload?.clinical_note?.patient_name || "Patient",
-        urgency: rec.urgency,
-        complaint: rec.payload?.clinical_note?.chief_complaint,
-        vitals: rec.payload?.clinical_note?.extracted_vitals,
-        next_step: rec.next_step,
-        signed_at: rec.signed_at
-      });
-    }
+    if (rec.status !== "SIGNED") return;
+    const v = rec.payload?.clinical_note?.extracted_vitals || {};
+    signedNotes.push({
+      line_no:         signedNotes.length + 1,
+      note_id:         rec.id.slice(-6),
+      patient_name:    rec.payload?.clinical_note?.patient_name || "Patient",
+      age_years:       rec.payload?.clinical_note?.age_years ?? null,
+      urgency:         rec.urgency,
+      chief_complaint: rec.payload?.clinical_note?.chief_complaint || "",
+      narrative_note:  rec.payload?.clinical_note?.narrative_note || "",
+      symptom_duration:rec.payload?.clinical_note?.symptom_duration || "",
+      next_step:       rec.next_step,
+      signed_at:       rec.signed_at
+        ? new Date(rec.signed_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+        : "unknown",
+      vitals: {
+        temp_f:       v.temperature_f ?? null,
+        bp:           v.bp_sys ? `${v.bp_sys}/${v.bp_dia} mmHg` : null,
+        bp_sys:       v.bp_sys ?? null,
+        bp_dia:       v.bp_dia ?? null,
+        pulse_bpm:    v.pulse_bpm ?? null,
+        spo2_percent: v.spo2_percent ?? null,
+        weight_kg:    v.weight_kg ?? null,
+      },
+      escalation_flags: (rec.payload?.escalation?.flags || []).map((f: any) => f.observation),
+      amendments_count: rec.amendments?.length ?? 0,
+    });
   });
 
   let assistantReply = "";
 
+  // ── Try Gemini AI first (if API key is configured) ─────────────────────
   if (aiClient) {
     try {
-      const chatPrompt = `
-You are Medscribe Register Assistant. You help health workers query and summarize today's signed OPD register entries.
-Active Locale: ${locale}.
-Current Signed Register Notes: ${JSON.stringify(signedNotes, null, 2)}
+      const snap = signedNotes;
+      const total = snap.length;
+      const crit  = snap.filter(n => n.urgency === "CRITICAL");
+      const urg   = snap.filter(n => n.urgency === "URGENT");
+      const rou   = snap.filter(n => n.urgency === "ROUTINE");
 
-User Request: "${message}"
+      const systemPrompt = `
+You are the Medscribe Register Assistant — a smart, warm clinical documentation helper for nurses at Indian Primary Health Centres.
+
+TODAY'S SIGNED REGISTER (${total} entries):
+- CRITICAL: ${crit.length} — ${crit.map(n => n.patient_name).join(", ") || "none"}
+- URGENT:   ${urg.length}
+- ROUTINE:  ${rou.length}
+
+FULL PATIENT DATA:
+${JSON.stringify(snap, null, 2)}
 
 RULES:
-- Answer accurately based ONLY on the signed register notes above.
-- Never give clinical diagnoses, drug prescriptions, or treatment advice.
-- If asked for clinical advice or medication, decline politely in the active language and state that you can only help query the register.
-- Keep responses concise, clear, and professional.
+- Answer using ONLY the data above. Never invent vitals or complaints.
+- Respond in locale: ${locale}. Match the user's language naturally.
+- Never prescribe, diagnose, or suggest treatment. Decline politely.
+- For referral slips, include: patient name/age, complaint, vitals, urgency, reason, next step.
+- Keep replies concise (under 180 words) unless asked for full details.
+- Use plain text — no markdown asterisks or hash headers.
 `;
+      const historyLines = Array.isArray(history)
+        ? history.slice(-8).map((h: { role: string; text: string }) =>
+            `${h.role === "user" ? "Nurse" : "Assistant"}: ${h.text}`
+          ).join("\n")
+        : "";
+
+      const prompt = [systemPrompt, historyLines, `Nurse: ${message}`, "Assistant:"]
+        .filter(Boolean).join("\n\n");
 
       const chatRes = await aiClient.models.generateContent({
         model: modelName,
-        contents: chatPrompt,
-        config: {
-          temperature: 0.2
-        }
+        contents: prompt,
+        config: { temperature: 0.25, maxOutputTokens: 512 },
       });
-
-      assistantReply = chatRes.text || "";
+      assistantReply = (chatRes.text || "").trim();
     } catch (err) {
-      console.error("Chat error:", err);
+      console.error("Gemini chat error:", err);
     }
   }
 
+  // ── Fall back to the rule-based engine (works with no API key) ──────────
   if (!assistantReply) {
-    // Intelligent fallback
-    const msg = message.toLowerCase();
-    if (msg.includes("fever") || msg.includes("कौछल") || msg.includes("காய்ச்சல்")) {
-      const feverCount = signedNotes.filter(n => (n.complaint || "").toLowerCase().includes("fever") || (n.complaint || "").includes("காய்ச்சல்") || (n.complaint || "").includes("बुखार")).length;
-      assistantReply = `There are ${feverCount} registered fever cases in today's OPD register.`;
-    } else if (msg.includes("critical") || msg.includes("अवसराम") || msg.includes("गंभीर")) {
-      const criticals = signedNotes.filter(n => n.urgency === "CRITICAL");
-      if (criticals.length === 0) {
-        assistantReply = "There are no CRITICAL notes registered today.";
-      } else {
-        const names = criticals.map(c => c.patient).join(", ");
-        assistantReply = `There are ${criticals.length} CRITICAL patient(s) registered today: ${names}.`;
-      }
-    } else if (msg.includes("dose") || msg.includes("medicine") || msg.includes("drug") || msg.includes("treatment")) {
-      assistantReply = "I can only help with documentation and the register. For clinical decisions, please consult the Medical Officer.";
-    } else {
-      assistantReply = `Today's register has ${signedNotes.length} signed entries (${signedNotes.filter(n=>n.urgency==='CRITICAL').length} Critical, ${signedNotes.filter(n=>n.urgency==='URGENT').length} Urgent).`;
-    }
+    assistantReply = answerRegisterQuery(message, signedNotes);
   }
 
-  return res.json({
-    reply: assistantReply,
-    register_count: signedNotes.length
+  return res.json({ reply: assistantReply, register_count: signedNotes.length });
+});
+
+// 7b. Delete Note
+app.delete("/api/notes/:id", (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!notesDb.has(id)) {
+    return res.status(404).json({ error: "note_not_found" });
+  }
+  notesDb.delete(id);
+  return res.json({ deleted: true, note_id: id });
+});
+
+// 7c. Update note fields directly (for register edit)
+app.put("/api/notes/:id", (req: Request, res: Response) => {
+  const { id } = req.params;
+  const record = notesDb.get(id);
+  if (!record) return res.status(404).json({ error: "note_not_found" });
+
+  const { patient_name, chief_complaint, narrative_note, urgency, next_step, nurse_id = "NURSE-01" } = req.body;
+
+  if (patient_name   !== undefined) record.payload.clinical_note.patient_name   = patient_name;
+  if (chief_complaint!== undefined) record.payload.clinical_note.chief_complaint = chief_complaint;
+  if (narrative_note !== undefined) record.payload.clinical_note.narrative_note  = narrative_note;
+  if (urgency        !== undefined) record.urgency = urgency;
+  if (next_step      !== undefined) { record.next_step = next_step; record.payload.queue_priority.next_step = next_step; }
+
+  record.amendments.push({
+    id: `amd_${Date.now()}`,
+    amended_at: new Date().toISOString(),
+    nurse_id,
+    field: "register_edit",
+    old_value: "",
+    new_value: "register edited",
+    reason: "register_edit",
   });
+
+  notesDb.set(id, record);
+  return res.json({ updated: true, note_id: id });
 });
 
 // 8. Operational Stats Endpoint

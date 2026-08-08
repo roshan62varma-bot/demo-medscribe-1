@@ -9,26 +9,16 @@ import { RegisterView } from './components/RegisterView';
 import { InsightsView } from './components/InsightsView';
 import { SettingsView } from './components/SettingsView';
 import { RegisterChatbot } from './components/RegisterChatbot';
-import { AuthModal } from './components/AuthModal';
-
-const DEFAULT_STAFF: Staff = {
-  id: 'NURSE-01',
-  name: 'Nurse Asha Devi',
-  role: 'Staff Nurse / ANM',
-  facilityId: 'PHC-01',
-  facilityName: 'Primary Health Centre #1',
-  pin: '1234',
-};
+import { LoginPage } from './components/LoginPage';
 
 function MedscribeApp() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('capture');
-  const [currentStaff, setCurrentStaff] = useState<Staff>(DEFAULT_STAFF);
-  const [signedNotes, setSignedNotes] = useState<ClinicalNote[]>([]);
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [chatbotOpen, setChatbotOpen] = useState(false);
+  const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
+  const [activeTab, setActiveTab]       = useState<ActiveTab>('capture');
+  const [signedNotes, setSignedNotes]   = useState<ClinicalNote[]>([]);
+  const [isOnline, setIsOnline]         = useState<boolean>(navigator.onLine);
+  const [chatbotOpen, setChatbotOpen]   = useState(false);
   const [voiceFeedbackEnabled, setVoiceFeedbackEnabled] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
 
   // Monitor network status
   useEffect(() => {
@@ -87,13 +77,24 @@ function MedscribeApp() {
     saveLocalSignedNote(newNote);
   };
 
+  const handleNoteDeleted = (noteId: string) => {
+    setSignedNotes((prev) => prev.filter((n) => n.note_id !== noteId));
+  };
+
+  const handleNoteUpdated = (updated: ClinicalNote) => {
+    setSignedNotes((prev) => prev.map((n) => n.note_id === updated.note_id ? updated : n));
+  };
+
+  // Show login screen if not authenticated
+  if (!currentStaff) {
+    return <LoginPage onLogin={(staff) => setCurrentStaff(staff)} />;
+  }
+
   return (
     <div className="min-h-dvh flex flex-col" style={{ background: 'var(--neo-bg)' }}>
-
-      {/* Top Header */}
       <Header
         currentStaff={currentStaff}
-        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenAuth={() => setCurrentStaff(null)}
         isOnline={isOnline}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}
@@ -132,6 +133,9 @@ function MedscribeApp() {
               <RegisterView
                 signedNotes={signedNotes}
                 onOpenChatbot={() => setChatbotOpen(true)}
+                onNoteDeleted={handleNoteDeleted}
+                onNoteUpdated={handleNoteUpdated}
+                currentStaff={currentStaff}
               />
             )}
             {activeTab === 'insights' && (
@@ -151,14 +155,6 @@ function MedscribeApp() {
       <RegisterChatbot
         isOpen={chatbotOpen}
         onClose={() => setChatbotOpen(false)}
-      />
-
-      {/* Authentication / Staff Switcher Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        currentStaff={currentStaff}
-        onSelectStaff={setCurrentStaff}
       />
     </div>
   );
