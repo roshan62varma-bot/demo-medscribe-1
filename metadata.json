@@ -1,0 +1,10 @@
+{
+  "name": "Medscribe",
+  "description": "Voice-to-register clinical note assistant for frontline health workers in Primary Health Centres.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
