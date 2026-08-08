@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
-import { MessageSquareText, X, Send, Bot, User, Sparkles, ShieldAlert, Loader2 } from 'lucide-react';
+import { X, Send, Bot, User, Sparkles, ShieldAlert, Loader2, Zap } from 'lucide-react';
 
 interface RegisterChatbotProps {
   isOpen: boolean;
@@ -16,18 +16,16 @@ interface ChatMsg {
 
 export const RegisterChatbot: React.FC<RegisterChatbotProps> = ({ isOpen, onClose }) => {
   const { t, locale } = useLanguage();
-
   const [inputMessage, setInputMessage] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       id: 'init_1',
       sender: 'assistant',
-      text: t('chat.scopeDecline') ? `Hello! I am your Register Assistant. How can I help you query today's signed OPD register?` : 'Hello! I am your Register Assistant.',
+      text: 'Hello! I am your Register Assistant. How can I help you query today\'s signed OPD register?',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
   const [loading, setLoading] = useState(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,7 +44,6 @@ export const RegisterChatbot: React.FC<RegisterChatbotProps> = ({ isOpen, onClos
       text: textToSend.trim(),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
-
     setMessages((prev) => [...prev, userMsg]);
     if (!queryText) setInputMessage('');
     setLoading(true);
@@ -55,37 +52,25 @@ export const RegisterChatbot: React.FC<RegisterChatbotProps> = ({ isOpen, onClos
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: textToSend.trim(),
-          locale,
-        }),
+        body: JSON.stringify({ message: textToSend.trim(), locale }),
       });
-
       if (!response.ok) throw new Error('chat_failed');
-
       const data = await response.json();
-
-      const assistantMsg: ChatMsg = {
+      setMessages((prev) => [...prev, {
         id: `asst_${Date.now()}`,
         sender: 'assistant',
         text: data.reply || t('chat.scopeDecline'),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
+      }]);
     } catch (e) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `asst_err_${Date.now()}`,
-          sender: 'assistant',
-          text: t('error.unknown'),
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      setMessages((prev) => [...prev, {
+        id: `asst_err_${Date.now()}`,
+        sender: 'assistant',
+        text: t('error.unknown'),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
     } finally {
-      setLoading(false);
-    }
+      setLoading(false); }
   };
 
   const suggestions = [
@@ -96,58 +81,89 @@ export const RegisterChatbot: React.FC<RegisterChatbotProps> = ({ isOpen, onClos
   ];
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-50 flex flex-col">
-      
+    <div
+      className="fixed inset-y-0 right-0 z-50 flex flex-col w-full sm:w-96 animate-fade-slide"
+      style={{
+        background: 'var(--neo-bg)',
+        boxShadow: '-6px 0 30px rgba(0,0,0,0.18)',
+      }}
+      role="dialog"
+      aria-label="Register Assistant"
+    >
       {/* Header */}
-      <div className="p-4 bg-[#0d5c63] text-slate-100 flex items-center justify-between border-b border-[#09484e]">
-        <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-[#fbbf24]" />
+      <div
+        className="px-4 py-3.5 flex items-center justify-between"
+        style={{
+          background: 'linear-gradient(135deg, #0c5560, #0d5c63)',
+          boxShadow: '0 2px 12px rgba(13,92,99,0.4)',
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.12)', boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.2)' }}
+          >
+            <Zap className="w-4 h-4 text-amber-300" />
+          </div>
           <div>
-            <h3 className="font-bold text-sm">{t('chat.title')}</h3>
-            <span className="text-[10px] text-[#2dd4bf] font-mono">OPD Register Tool</span>
+            <h3 className="font-bold text-sm text-white">{t('chat.title')}</h3>
+            <span className="text-[10px] font-mono" style={{ color: '#5eead4' }}>OPD Register Tool</span>
           </div>
         </div>
-
         <button
           onClick={onClose}
-          className="p-1 rounded-lg hover:bg-black/20 text-[#2dd4bf]"
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+          style={{ background: 'rgba(255,255,255,0.1)', color: '#5eead4' }}
           aria-label="Close chatbot"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Suggestion Chips */}
-      <div className="p-3 bg-amber-50/60 dark:bg-slate-800/60 border-b border-amber-200/60 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-xs">
+      {/* Suggestion chips */}
+      <div
+        className="px-3 py-2.5 flex items-center gap-1.5 overflow-x-auto"
+        style={{ borderBottom: '1px solid rgba(163,177,198,0.3)', background: 'var(--neo-bg)' }}
+      >
         {suggestions.map((s, idx) => (
           <button
             key={idx}
             onClick={() => handleSendMessage(s)}
-            className="whitespace-nowrap bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-teal-50 hover:border-teal-300 transition-colors shrink-0"
+            className="neo-btn whitespace-nowrap px-2.5 py-1.5 text-xs font-medium text-slate-600 shrink-0"
           >
             {s}
           </button>
         ))}
       </div>
 
-      {/* Messages List */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50 dark:bg-slate-950">
+      {/* Messages */}
+      <div className="flex-1 px-4 py-4 overflow-y-auto space-y-3" style={{ background: 'var(--neo-bg)' }}>
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
-          >
-            <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5 px-1 font-mono">
-              {m.sender === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3 text-teal-600" />}
+          <div key={m.id} className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-1 px-1 font-mono">
+              {m.sender === 'user'
+                ? <User className="w-3 h-3" />
+                : <Bot className="w-3 h-3" style={{ color: 'var(--teal)' }} />
+              }
               <span>{m.time}</span>
             </div>
-
             <div
-              className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
+              className="max-w-[85%] px-3.5 py-2.5 text-xs leading-relaxed"
+              style={
                 m.sender === 'user'
-                  ? 'bg-[#0d5c63] text-white rounded-tr-none'
-                  : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-tl-none shadow-sm'
-              }`}
+                  ? {
+                      background: 'linear-gradient(135deg, #0f6b73, #0d5c63)',
+                      color: 'white',
+                      borderRadius: '1rem 1rem 0.25rem 1rem',
+                      boxShadow: '4px 4px 10px rgba(13,92,99,0.35)',
+                    }
+                  : {
+                      background: 'var(--neo-bg)',
+                      color: 'var(--text-primary)',
+                      borderRadius: '1rem 1rem 1rem 0.25rem',
+                      boxShadow: 'var(--neo-shadow-sm)',
+                    }
+              }
             >
               {m.text}
             </div>
@@ -155,20 +171,17 @@ export const RegisterChatbot: React.FC<RegisterChatbotProps> = ({ isOpen, onClos
         ))}
         {loading && (
           <div className="flex items-center gap-2 text-xs text-slate-400 font-mono p-2">
-            <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--teal)' }} />
             <span>Searching register...</span>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+      {/* Input */}
+      <div className="p-3" style={{ borderTop: '1px solid rgba(163,177,198,0.3)' }}>
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
+          onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
           className="flex items-center gap-2"
         >
           <input
@@ -176,24 +189,26 @@ export const RegisterChatbot: React.FC<RegisterChatbotProps> = ({ isOpen, onClos
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder={t('chat.placeholder')}
-            className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600"
+            className="neo-input flex-1 px-3 py-2.5 text-xs text-slate-800 placeholder:text-slate-400"
           />
           <button
             type="submit"
             disabled={!inputMessage.trim() || loading}
-            className="p-2.5 bg-[#0d5c63] hover:bg-[#09484e] disabled:opacity-50 text-white rounded-xl shadow transition-colors"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
+            style={{
+              background: 'linear-gradient(135deg, #0f6b73, #0d5c63)',
+              color: 'white',
+              boxShadow: '4px 4px 10px rgba(13,92,99,0.35)',
+            }}
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
           </button>
         </form>
-
-        <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
-          <span className="flex items-center gap-1 text-amber-600 font-semibold">
-            <ShieldAlert className="w-3 h-3" /> Scope: Register queries only
-          </span>
+        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-600 font-semibold">
+          <ShieldAlert className="w-3 h-3" />
+          <span>Scope: Register queries only</span>
         </div>
       </div>
-
     </div>
   );
 };

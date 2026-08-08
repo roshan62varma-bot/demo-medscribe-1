@@ -1,58 +1,101 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Staff } from '../types';
-import { Globe, Wifi, WifiOff, User, ChevronDown } from 'lucide-react';
+import { Globe, Wifi, WifiOff, User, ChevronDown, Menu, X } from 'lucide-react';
 
 interface HeaderProps {
   currentStaff: Staff;
   onOpenAuth: () => void;
   isOnline: boolean;
+  onToggleSidebar: () => void;
+  sidebarOpen: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentStaff, onOpenAuth, isOnline }) => {
+export const Header: React.FC<HeaderProps> = ({
+  currentStaff,
+  onOpenAuth,
+  isOnline,
+  onToggleSidebar,
+  sidebarOpen,
+}) => {
   const { locale, setLocale, SUPPORTED_LANGUAGES, t, langMeta } = useLanguage();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white/70 text-slate-800 border-b border-slate-200 sticky top-0 z-30 backdrop-blur-md px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        
-        {/* Brand logo for mobile / compact layout */}
+    <header
+      className="sticky top-0 z-40 no-print"
+      style={{
+        background: 'var(--neo-bg)',
+        boxShadow: '0 2px 12px rgba(163,177,198,0.45), 0 -1px 0 rgba(255,255,255,0.9)',
+      }}
+    >
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+
+        {/* Left: Hamburger (mobile) + Brand */}
         <div className="flex items-center gap-3">
-          <div className="md:hidden flex items-baseline">
-            <span className="text-xl font-black tracking-tight text-[#0d5c63]">Med</span>
-            <span className="text-xl font-black tracking-tight text-[#d97706]">scribe</span>
+          {/* Mobile hamburger */}
+          <button
+            onClick={onToggleSidebar}
+            className="md:hidden neo-btn w-9 h-9 flex items-center justify-center text-slate-600"
+            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+          >
+            {sidebarOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
+          </button>
+
+          {/* Brand (desktop — sidebar has its own) */}
+          <div className="hidden md:flex items-center gap-2">
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+              style={{
+                background: 'rgba(13,92,99,0.08)',
+                boxShadow: 'inset 2px 2px 4px rgba(163,177,198,0.3), inset -1px -1px 3px rgba(255,255,255,0.8)',
+                color: 'var(--teal)',
+              }}
+            >
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ background: 'var(--teal)' }}
+              />
+              <span>{currentStaff.facilityName}</span>
+            </div>
           </div>
-          
-          <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-[#0d5c63] bg-[#0d5c63]/10 px-3 py-1.5 rounded-full border border-[#0d5c63]/20">
-            <span className="w-2 h-2 rounded-full bg-[#0d5c63] animate-pulse"></span>
-            <span>{currentStaff.facilityName}</span>
+
+          {/* Mobile brand */}
+          <div className="md:hidden flex items-baseline gap-0.5">
+            <span className="text-lg font-black" style={{ color: 'var(--teal)' }}>Med</span>
+            <span className="text-lg font-black" style={{ color: 'var(--amber)' }}>scribe</span>
           </div>
         </div>
 
-        {/* Right Action Controls: Language Switcher, Network Status, User Profile */}
-        <div className="flex items-center gap-2.5">
-          
-          {/* Network Status Badge */}
-          <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-            isOnline 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-              : 'bg-amber-50 text-amber-800 border-amber-200'
-          }`}>
-            {isOnline ? <Wifi className="w-3.5 h-3.5 text-emerald-600" /> : <WifiOff className="w-3.5 h-3.5 text-amber-600" />}
-            <span>{isOnline ? t('offline.ready') : 'Offline Mode'}</span>
+        {/* Right: Controls */}
+        <div className="flex items-center gap-2">
+
+          {/* Network Status */}
+          <div
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold neo-card-sm"
+            style={{ color: isOnline ? '#065f46' : '#92400e' }}
+          >
+            {isOnline
+              ? <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+              : <WifiOff className="w-3.5 h-3.5 text-amber-600" />
+            }
+            <span>{isOnline ? t('offline.ready') : 'Offline'}</span>
           </div>
 
-          {/* Language Selector Dropdown */}
+          {/* Language Selector */}
           <div className="relative">
             <button
               onClick={() => setLangMenuOpen(!langMenuOpen)}
-              className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100/80 text-[#0d5c63] px-3.5 py-1.5 rounded-lg border border-teal-200 text-xs font-bold transition-colors shadow-xs"
+              className="neo-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
+              style={{ color: 'var(--teal)' }}
               aria-label="Select language"
             >
-              <Globe className="w-3.5 h-3.5 text-[#0d5c63]" />
-              <span>{langMeta.nativeLabel}</span>
-              <ChevronDown className="w-3 h-3 text-[#0d5c63]" />
+              <Globe className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{langMeta.nativeLabel}</span>
+              <ChevronDown
+                className="w-3 h-3 transition-transform duration-200"
+                style={{ transform: langMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
             </button>
 
             {langMenuOpen && (
@@ -61,45 +104,69 @@ export const Header: React.FC<HeaderProps> = ({ currentStaff, onOpenAuth, isOnli
                   className="fixed inset-0 z-40"
                   onClick={() => setLangMenuOpen(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-2 grid grid-cols-2 gap-1 max-h-80 overflow-y-auto">
-                  <div className="col-span-2 px-2 py-1 text-[11px] font-bold text-slate-400 border-b border-slate-100 mb-1 uppercase tracking-wider">
+                <div
+                  className="absolute right-0 mt-2 w-72 z-50 p-3 animate-scale-in"
+                  style={{
+                    background: 'var(--neo-bg)',
+                    boxShadow: 'var(--neo-shadow-lg)',
+                    borderRadius: '1rem',
+                  }}
+                >
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-2">
                     {t('settings.captureLanguage')}
                   </div>
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLocale(lang.code);
-                        setLangMenuOpen(false);
-                      }}
-                      className={`text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex flex-col ${
-                        locale === lang.code
-                          ? 'bg-[#0d5c63] text-white'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                      lang={lang.code}
-                    >
-                      <span className="text-xs">{lang.nativeLabel}</span>
-                      <span className="text-[10px] opacity-75">{lang.label}</span>
-                    </button>
-                  ))}
+                  <div className="grid grid-cols-2 gap-1.5 max-h-72 overflow-y-auto">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => { setLocale(lang.code); setLangMenuOpen(false); }}
+                        className="text-left px-2.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                        style={
+                          locale === lang.code
+                            ? {
+                                background: 'linear-gradient(135deg, #0f6b73, #0d5c63)',
+                                color: 'white',
+                                boxShadow: '3px 3px 8px rgba(13,92,99,0.35), -2px -2px 5px rgba(255,255,255,0.5)',
+                              }
+                            : {
+                                background: 'var(--neo-bg)',
+                                color: 'var(--text-secondary)',
+                                boxShadow: 'var(--neo-shadow-sm)',
+                              }
+                        }
+                        lang={lang.code}
+                      >
+                        <div className="font-bold">{lang.nativeLabel}</div>
+                        <div className="text-[10px] opacity-70 mt-0.5">{lang.label}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
           </div>
 
-          {/* User Profile Switcher */}
+          {/* Staff / Auth Button */}
           <button
             onClick={onOpenAuth}
-            className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 rounded-lg border border-amber-200/80 text-xs font-semibold transition-colors"
+            className="neo-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
+            style={{ color: '#92400e' }}
             title="Switch staff member"
           >
-            <User className="w-3.5 h-3.5 text-[#d97706]" />
-            <span className="hidden sm:inline">{currentStaff.name}</span>
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black"
+              style={{
+                background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                color: '#451a03',
+                boxShadow: '2px 2px 5px rgba(245,158,11,0.4)',
+              }}
+            >
+              {currentStaff.name.charAt(0)}
+            </div>
+            <span className="hidden sm:inline max-w-28 truncate">{currentStaff.name}</span>
           </button>
 
         </div>
-
       </div>
     </header>
   );

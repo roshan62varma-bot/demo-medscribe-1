@@ -28,20 +28,25 @@ function MedscribeApp() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [chatbotOpen, setChatbotOpen] = useState(false);
   const [voiceFeedbackEnabled, setVoiceFeedbackEnabled] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Monitor network status
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Close sidebar on tab change (mobile)
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
+  };
 
   // Fetch signed register notes on mount
   useEffect(() => {
@@ -64,7 +69,6 @@ function MedscribeApp() {
               amendments: item.amendments || [],
               ...item.payload,
             }));
-
             setSignedNotes(fetchedNotes);
             return;
           }
@@ -72,12 +76,9 @@ function MedscribeApp() {
       } catch (e) {
         console.error('Failed to load server register, loading local store:', e);
       }
-
-      // Fallback to local offline store
       const local = getLocalSignedNotes();
       setSignedNotes(local);
     }
-
     loadRegister();
   }, []);
 
@@ -87,54 +88,63 @@ function MedscribeApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-600 selection:text-white">
-      
+    <div className="min-h-dvh flex flex-col" style={{ background: 'var(--neo-bg)' }}>
+
       {/* Top Header */}
       <Header
         currentStaff={currentStaff}
         onOpenAuth={() => setAuthModalOpen(true)}
         isOnline={isOnline}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        sidebarOpen={sidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        
+      <div className="flex-1 flex relative overflow-hidden">
+
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Left Sidebar */}
         <Sidebar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           currentStaff={currentStaff}
+          isOpen={sidebarOpen}
         />
 
         {/* Main Content View Container */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
-          {activeTab === 'capture' && (
-            <CaptureView
-              currentStaff={currentStaff}
-              onNoteSigned={handleNoteSigned}
-              recentSignedNotes={signedNotes}
-              onNavigateToRegister={() => setActiveTab('register')}
-            />
-          )}
-
-          {activeTab === 'register' && (
-            <RegisterView
-              signedNotes={signedNotes}
-              onOpenChatbot={() => setChatbotOpen(true)}
-            />
-          )}
-
-          {activeTab === 'insights' && (
-            <InsightsView signedNotes={signedNotes} />
-          )}
-
-          {activeTab === 'settings' && (
-            <SettingsView
-              voiceFeedbackEnabled={voiceFeedbackEnabled}
-              setVoiceFeedbackEnabled={setVoiceFeedbackEnabled}
-            />
-          )}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0">
+          <div className="max-w-[1200px] mx-auto">
+            {activeTab === 'capture' && (
+              <CaptureView
+                currentStaff={currentStaff}
+                onNoteSigned={handleNoteSigned}
+                recentSignedNotes={signedNotes}
+                onNavigateToRegister={() => handleTabChange('register')}
+              />
+            )}
+            {activeTab === 'register' && (
+              <RegisterView
+                signedNotes={signedNotes}
+                onOpenChatbot={() => setChatbotOpen(true)}
+              />
+            )}
+            {activeTab === 'insights' && (
+              <InsightsView signedNotes={signedNotes} />
+            )}
+            {activeTab === 'settings' && (
+              <SettingsView
+                voiceFeedbackEnabled={voiceFeedbackEnabled}
+                setVoiceFeedbackEnabled={setVoiceFeedbackEnabled}
+              />
+            )}
+          </div>
         </main>
-
       </div>
 
       {/* Register Assistant Chatbot Panel */}
@@ -150,7 +160,6 @@ function MedscribeApp() {
         currentStaff={currentStaff}
         onSelectStaff={setCurrentStaff}
       />
-
     </div>
   );
 }

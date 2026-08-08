@@ -19,9 +19,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
 
   const handleSave = () => {
     setEditing(false);
-    if (current.trim() !== value) {
-      onSave(current.trim());
-    }
+    if (current.trim() !== value) onSave(current.trim());
   };
 
   const handleCancel = () => {
@@ -30,25 +28,39 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   };
 
   return (
-    <div className={`group relative bg-amber-50/40 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg p-3 ${className}`}>
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+    <div
+      className={`group relative p-3.5 transition-all duration-200 ${className}`}
+      style={{
+        background: 'var(--neo-bg)',
+        boxShadow: editing
+          ? 'inset 4px 4px 8px rgba(163,177,198,0.5), inset -3px -3px 7px rgba(255,255,255,0.85), 0 0 0 2px rgba(13,92,99,0.2)'
+          : 'inset 3px 3px 6px rgba(163,177,198,0.45), inset -2px -2px 5px rgba(255,255,255,0.8)',
+        borderRadius: '0.75rem',
+      }}
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
           {label}
         </label>
         {!editing && (
           <button
             onClick={() => setEditing(true)}
-            className="opacity-60 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-teal-700 dark:hover:text-teal-400 p-1"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg"
+            style={{
+              background: 'var(--neo-bg)',
+              boxShadow: 'var(--neo-shadow-sm)',
+              color: 'var(--teal)',
+            }}
             title="Edit field"
             aria-label="Edit field"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="w-3 h-3" />
           </button>
         )}
       </div>
 
       {editing ? (
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={current}
@@ -58,29 +70,40 @@ export const EditableField: React.FC<EditableFieldProps> = ({
               if (e.key === 'Escape') handleCancel();
             }}
             autoFocus
-            className="flex-1 bg-white dark:bg-slate-900 border border-teal-500 rounded px-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
+            className="neo-input flex-1 px-3 py-1.5 text-sm font-medium text-slate-800"
           />
           <button
             onClick={handleSave}
-            className="p-1 bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors"
-            title="Save edit"
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #0f6b73, #0d5c63)',
+              color: 'white',
+              boxShadow: '3px 3px 6px rgba(13,92,99,0.3)',
+            }}
+            title="Save"
           >
-            <Check className="w-4 h-4" />
+            <Check className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleCancel}
-            className="p-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded hover:bg-slate-300 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+            style={{
+              background: 'var(--neo-bg)',
+              color: 'var(--text-muted)',
+              boxShadow: 'var(--neo-shadow-sm)',
+            }}
             title="Cancel"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       ) : (
         <div
           onClick={() => setEditing(true)}
-          className="cursor-pointer text-sm font-medium text-slate-800 dark:text-slate-100 hover:text-teal-800 dark:hover:text-teal-300 transition-colors"
+          className="cursor-pointer text-sm font-medium transition-colors"
+          style={{ color: 'var(--text-primary)' }}
         >
-          {value || '—'}
+          {value || <span style={{ color: 'var(--text-muted)' }}>—</span>}
         </div>
       )}
     </div>
@@ -98,9 +121,7 @@ export const EditableTextarea: React.FC<EditableFieldProps> = ({
 
   const handleSave = () => {
     setEditing(false);
-    if (current.trim() !== value) {
-      onSave(current.trim());
-    }
+    if (current.trim() !== value) onSave(current.trim());
   };
 
   const handleCancel = () => {
@@ -109,53 +130,79 @@ export const EditableTextarea: React.FC<EditableFieldProps> = ({
   };
 
   return (
-    <div className={`group relative bg-amber-50/40 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg p-3 ${className}`}>
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+    <div
+      className={`group relative p-3.5 transition-all duration-200 ${className}`}
+      style={{
+        background: 'var(--neo-bg)',
+        boxShadow: editing
+          ? 'inset 4px 4px 8px rgba(163,177,198,0.5), inset -3px -3px 7px rgba(255,255,255,0.85), 0 0 0 2px rgba(13,92,99,0.2)'
+          : 'inset 3px 3px 6px rgba(163,177,198,0.45), inset -2px -2px 5px rgba(255,255,255,0.8)',
+        borderRadius: '0.75rem',
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
           {label}
         </label>
         {!editing && (
           <button
             onClick={() => setEditing(true)}
-            className="opacity-60 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-teal-700 dark:hover:text-teal-400 p-1"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg"
+            style={{
+              background: 'var(--neo-bg)',
+              boxShadow: 'var(--neo-shadow-sm)',
+              color: 'var(--teal)',
+            }}
             title="Edit narrative note"
             aria-label="Edit narrative note"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="w-3 h-3" />
           </button>
         )}
       </div>
 
       {editing ? (
-        <div className="mt-1">
+        <div>
           <textarea
-            rows={4}
+            rows={5}
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
             autoFocus
-            className="w-full bg-white dark:bg-slate-900 border border-teal-500 rounded p-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
+            className="neo-input w-full px-3 py-2 text-sm text-slate-800 leading-relaxed resize-none"
           />
           <div className="flex justify-end gap-2 mt-2">
             <button
               onClick={handleCancel}
-              className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-medium hover:bg-slate-300"
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all"
+              style={{
+                background: 'var(--neo-bg)',
+                color: 'var(--text-muted)',
+                boxShadow: 'var(--neo-shadow-sm)',
+              }}
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-3 py-1 bg-teal-600 text-white rounded text-xs font-medium hover:bg-teal-700 flex items-center gap-1"
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5"
+              style={{
+                background: 'linear-gradient(135deg, #0f6b73, #0d5c63)',
+                color: 'white',
+                boxShadow: '3px 3px 8px rgba(13,92,99,0.3)',
+              }}
             >
-              <Check className="w-3.5 h-3.5" /> Save edits
+              <Check className="w-3.5 h-3.5" />
+              Save edits
             </button>
           </div>
         </div>
       ) : (
         <div
           onClick={() => setEditing(true)}
-          className="cursor-pointer text-sm font-serif leading-relaxed text-slate-800 dark:text-slate-200 hover:text-teal-800 dark:hover:text-teal-300 whitespace-pre-wrap"
+          className="cursor-pointer text-sm leading-relaxed whitespace-pre-wrap transition-colors"
+          style={{ color: 'var(--text-primary)', fontFamily: 'Georgia, serif' }}
         >
-          {value || '—'}
+          {value || <span style={{ color: 'var(--text-muted)' }}>—</span>}
         </div>
       )}
     </div>

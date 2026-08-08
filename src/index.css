@@ -1,14 +1,279 @@
 @import "tailwindcss";
 
-@layer base {
-  body {
-    background-color: #fdfbf7;
-    color: #1e293b;
+/* ─── Neomorphic Design System ───────────────────────────────────────────── */
+
+:root {
+  /* Surface */
+  --neo-bg:        #e8edf2;
+  --neo-surface:   #edf1f6;
+  --neo-card:      #e8edf2;
+
+  /* Shadows — neomorphic light source from top-left */
+  --neo-shadow-sm:
+    3px 3px 6px  rgba(163,177,198,0.6),
+   -2px -2px 5px  rgba(255,255,255,0.9);
+  --neo-shadow:
+    6px 6px 14px rgba(163,177,198,0.6),
+   -4px -4px 10px rgba(255,255,255,0.9);
+  --neo-shadow-lg:
+    10px 10px 20px rgba(163,177,198,0.65),
+   -6px -6px 15px rgba(255,255,255,0.92);
+  --neo-shadow-inset:
+    inset 4px 4px 8px  rgba(163,177,198,0.55),
+    inset -3px -3px 7px rgba(255,255,255,0.85);
+
+  /* Brand */
+  --teal:          #0d5c63;
+  --teal-hover:    #09484e;
+  --teal-light:    #2dd4bf;
+  --amber:         #f59e0b;
+  --amber-deep:    #d97706;
+
+  /* Text */
+  --text-primary:  #1a2332;
+  --text-secondary:#4a5568;
+  --text-muted:    #718096;
+}
+
+/* ─── Global Reset ───────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--neo-bg);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100dvh;
+  line-height: 1.6;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────── */
+
+.font-display {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Neomorphic Utility Classes ─────────────────────────────────────────── */
+
+.neo-card {
+  background: var(--neo-card);
+  box-shadow: var(--neo-shadow);
+  border-radius: 1.25rem;
+}
+
+.neo-card-sm {
+  background: var(--neo-card);
+  box-shadow: var(--neo-shadow-sm);
+  border-radius: 0.875rem;
+}
+
+.neo-card-lg {
+  background: var(--neo-card);
+  box-shadow: var(--neo-shadow-lg);
+  border-radius: 1.5rem;
+}
+
+.neo-inset {
+  background: var(--neo-bg);
+  box-shadow: var(--neo-shadow-inset);
+  border-radius: 0.875rem;
+}
+
+.neo-btn {
+  background: var(--neo-card);
+  box-shadow: var(--neo-shadow-sm);
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.neo-btn:hover {
+  box-shadow:
+    8px 8px 16px rgba(163,177,198,0.65),
+   -5px -5px 12px rgba(255,255,255,0.92);
+  transform: translateY(-1px);
+}
+
+.neo-btn:active {
+  box-shadow: var(--neo-shadow-inset);
+  transform: translateY(0);
+}
+
+.neo-btn-primary {
+  background: linear-gradient(135deg, #0f6b73 0%, #0d5c63 50%, #0a4f56 100%);
+  box-shadow:
+    5px 5px 12px rgba(13,92,99,0.45),
+   -3px -3px 8px rgba(255,255,255,0.6);
+  border-radius: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.neo-btn-primary:hover {
+  box-shadow:
+    8px 8px 18px rgba(13,92,99,0.5),
+   -4px -4px 10px rgba(255,255,255,0.7);
+  transform: translateY(-1px);
+}
+
+.neo-btn-primary:active {
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.25),
+    inset -2px -2px 5px rgba(255,255,255,0.1);
+  transform: translateY(0);
+}
+
+.neo-btn-amber {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  box-shadow:
+    5px 5px 12px rgba(245,158,11,0.4),
+   -3px -3px 8px rgba(255,255,255,0.6);
+  border-radius: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.neo-btn-amber:hover {
+  box-shadow:
+    8px 8px 18px rgba(245,158,11,0.5),
+   -4px -4px 10px rgba(255,255,255,0.7);
+  transform: translateY(-1px);
+}
+
+.neo-input {
+  background: var(--neo-bg);
+  box-shadow: var(--neo-shadow-inset);
+  border: none;
+  border-radius: 0.75rem;
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.neo-input:focus {
+  box-shadow:
+    inset 4px 4px 8px rgba(163,177,198,0.55),
+    inset -3px -3px 7px rgba(255,255,255,0.85),
+    0 0 0 3px rgba(13,92,99,0.15);
+}
+
+/* ─── Sidebar neomorphic active state ───────────────────────────────────── */
+
+.neo-nav-active {
+  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%);
+  box-shadow:
+    inset 3px 3px 6px rgba(0,0,0,0.15),
+    inset -2px -2px 5px rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0;   }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.animate-fade-slide {
+  animation: fadeSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.animate-pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(239,68,68,0.6);
+  animation: pulse-ring 1.2s ease-out infinite;
+}
+
+/* ─── Scrollbar styling ──────────────────────────────────────────────────── */
+
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: rgba(163,177,198,0.5);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(163,177,198,0.8); }
+
+/* ─── Priority Badge System ──────────────────────────────────────────────── */
+
+.badge-critical {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 2px 8px rgba(220,38,38,0.4);
+  color: white;
+}
+
+.badge-urgent {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  box-shadow: 0 2px 8px rgba(217,119,6,0.4);
+  color: white;
+}
+
+.badge-routine {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+  color: white;
+}
+
+/* ─── Progress bars ──────────────────────────────────────────────────────── */
+
+.progress-bar {
+  height: 6px;
+  background: var(--neo-shadow-inset);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d5c63, #2dd4bf);
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ─── Responsive sidebar overlay ────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .sidebar-mobile-open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 40px rgba(0,0,0,0.2);
+  }
+  .sidebar-backdrop {
+    display: block;
   }
 }
 
-.bg-natural-canvas {
-  background-color: #fdfbf7;
-  background-image: linear-gradient(#e5e7eb 1px, transparent 1px);
-  background-size: 100% 28px;
+/* ─── Print styles ───────────────────────────────────────────────────────── */
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .neo-card, .neo-card-sm { box-shadow: none; border: 1px solid #e5e7eb; }
 }

@@ -372,9 +372,29 @@ function validateAndSanitizeNote(payload: any): any {
 }
 
 // Fallback Draft Generator when Gemini API key is missing or offline
+// Spoken confirmation messages for all 14 supported languages
+const SPOKEN_CONFIRMATIONS: Record<string, { review: string; critical: string }> = {
+  "en-IN": { review: "Note recorded. Please review and sign.", critical: "Note recorded. Marked CRITICAL — refer to Medical Officer now." },
+  "hi-IN": { review: "नोट दर्ज किया गया है। समीक्षा करें और हस्ताक्षर करें।", critical: "नोट दर्ज। गंभीर — अभी MO के पास भेजें।" },
+  "mr-IN": { review: "नोंद केली. समीक्षा करा आणि स्वाक्षरी करा.", critical: "नोंद केली. गंभीर — MO कडे पाठवा." },
+  "bn-IN": { review: "নোট নথিভুক্ত হয়েছে। পর্যালোচনা করুন এবং স্বাক্ষর করুন।", critical: "নোট নথিভুক্ত। গুরুতর — MO-তে পাঠান।" },
+  "ta-IN": { review: "குறிப்பு பதிவு செய்யப்பட்டது. மதிப்பாய்வு செய்து கையொப்பமிடுங்கள்.", critical: "குறிப்பு பதிவு. அவசரம் — MO-விடம் உடனே அனுப்புங்கள்." },
+  "te-IN": { review: "నోట్ నమోదైంది. సమీక్షించి సంతకం చేయండి.", critical: "నోట్ నమోదు. క్లిష్టమైన — ఇప్పుడే MO దగ్గరకు పంపండి." },
+  "gu-IN": { review: "નોંધ દર્જ. સમીક્ષા કરો અને સહી કરો.", critical: "નોંધ. ગંભીર — MO પાસે પાઠવો." },
+  "kn-IN": { review: "ಟಿಪ್ಪಣಿ ದಾಖಲಾಯಿತು. ಸಮೀಕ್ಷಿಸಿ ಸಹಿ ಮಾಡಿ.", critical: "ಟಿಪ್ಪಣಿ ದಾಖಲಾಯಿತು. ತೀವ್ರ — MO ಬಳಿ ಕಳುಹಿಸಿ." },
+  "ml-IN": { review: "കുറിപ്പ് രേഖപ്പെടുത്തി. അവലോകനം ചെയ്ത് ഒപ്പിടുക.", critical: "കുറിപ്പ് രേഖപ്പെടുത്തി. ഗുരുതരം — MO-ലേക്ക് അയക്കുക." },
+  "pa-IN": { review: "ਨੋਟ ਦਰਜ ਕੀਤਾ। ਸਮੀਖਿਆ ਕਰੋ ਅਤੇ ਦਸਤਖ਼ਤ ਕਰੋ।", critical: "ਨੋਟ ਦਰਜ। ਗੰਭੀਰ — MO ਕੋਲ ਭੇਜੋ।" },
+  "or-IN": { review: "ନୋଟ ଦର୍ଜ ହୋଇଛି. ସମୀକ୍ଷା କରନ୍ତୁ ଓ ସ୍ୱାକ୍ଷର କରନ୍ତୁ.", critical: "ନୋଟ ଦର୍ଜ. ଗୁରୁତର — MO ଙ୍କ ପାଖକୁ ପଠାନ୍ତୁ." },
+  "ur-IN": { review: "نوٹ درج ہو گیا۔ جائزہ لیں اور دستخط کریں۔", critical: "نوٹ درج۔ شدید — ابھی MO کو بھیجیں۔" },
+  "as-IN": { review: "টোকা লিপিবদ্ধ হৈছে. পৰ্যালোচনা কৰক আৰু স্বাক্ষৰ কৰক.", critical: "টোকা লিপিবদ্ধ. গুৰুতৰ — MO-লৈ পঠাওক." },
+  "mai-IN": { review: "नोट दर्ज भेल. समीक्षा करू आ हस्ताक्षर करू.", critical: "नोट दर्ज. गंभीर — अखने MO लग पठाउ." },
+};
+
 function generateFallbackDraft(rawInput: string, langHint: string = "en-IN"): any {
-  const isTa = langHint.startsWith("ta") || /jerom|vayasu|kashtam/i.test(rawInput);
-  const isHi = langHint.startsWith("hi") || /bukhar|saans|dard/i.test(rawInput);
+  // Detect language from hint first, then from text patterns
+  const lang = langHint || "en-IN";
+  const isTa = lang.startsWith("ta") || /jerom|vayasu|kashtam|வா|நோ|வயது/i.test(rawInput);
+  const isHi = lang.startsWith("hi") || /bukhar|saans|dard|बुखार|दर्द/i.test(rawInput);
 
   // Extract simple vitals if present
   let bpSys: number | null = null;
@@ -395,13 +415,23 @@ function generateFallbackDraft(rawInput: string, langHint: string = "en-IN"): an
   const ageMatch = rawInput.match(/(\d{1,2})\s*(?:years?|yr|vayasu|saal)/i);
   if (ageMatch) age = parseInt(ageMatch[1], 10);
 
-  const isCritical = /breathless|moochu|saans|chest pain|unconscious|91%|90%/i.test(rawInput) || (bpSys && bpSys > 160);
+  const isCritical = /breathless|moochu|saans|chest pain|unconscious|91%|90%/i.test(rawInput) || !!(bpSys && bpSys > 160);
   const urgency = isCritical ? "CRITICAL" : "ROUTINE";
+
+  // Resolve the actual detected language
+  const detectedLang = isTa ? "ta-IN" : isHi ? "hi-IN" : lang;
+  const detectedLangName: Record<string, string> = {
+    "en-IN": "English", "hi-IN": "Hindi", "mr-IN": "Marathi", "bn-IN": "Bengali",
+    "ta-IN": "Tamil",   "te-IN": "Telugu", "gu-IN": "Gujarati", "kn-IN": "Kannada",
+    "ml-IN": "Malayalam", "pa-IN": "Punjabi", "or-IN": "Odia", "ur-IN": "Urdu",
+    "as-IN": "Assamese", "mai-IN": "Maithili",
+  };
+  const confirmations = SPOKEN_CONFIRMATIONS[detectedLang] || SPOKEN_CONFIRMATIONS["en-IN"];
 
   return {
     meta: {
-      detected_language: isTa ? "ta-IN" : isHi ? "hi-IN" : "en-IN",
-      detected_language_name: isTa ? "Tamil" : isHi ? "Hindi" : "English",
+      detected_language: detectedLang,
+      detected_language_name: detectedLangName[detectedLang] || "English",
       language_confidence: 0.9,
       input_quality: "GOOD",
       term_normalisation: [],
@@ -461,13 +491,11 @@ function generateFallbackDraft(rawInput: string, langHint: string = "en-IN"): an
     },
     missing_fields: [],
     spoken_confirmation: {
-      text_in_detected_language: isTa
-        ? "குறிப்பு பதிவு செய்யப்பட்டது. மதிப்பாய்வு செய்து கையொப்பமிடுங்கள்."
-        : isHi
-        ? "नोट दर्ज किया गया है। समीक्षा करें और हस्ताक्षर करें।"
+      text_in_detected_language: isCritical ? confirmations.critical : confirmations.review,
+      text_in_english: isCritical
+        ? "Note recorded. Marked CRITICAL — refer to Medical Officer now."
         : "Note recorded. Please review and sign.",
-      text_in_english: "Note recorded. Please review and sign.",
-      language_code: isTa ? "ta-IN" : isHi ? "hi-IN" : "en-IN",
+      language_code: detectedLang,
       tone: isCritical ? "ALERT" : "CALM"
     }
   };
